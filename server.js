@@ -6,12 +6,9 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// create uploads folder if not exists
-if (!fs.existsSync("uploads")) {
-    fs.mkdirSync("uploads");
-}
-
-const upload = multer({ dest: "uploads/" });
+// Use memory storage instead of saving to uploads folder
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // serve frontend
 app.use(express.static("public"));
@@ -23,10 +20,12 @@ app.get("/latest.jpg", (req, res) => {
 
 // upload endpoint
 app.post("/upload", upload.single("image"), (req, res) => {
+    if (!req.file) {
+        return res.status(400).send("No file uploaded");
+    }
 
-    fs.copyFileSync(req.file.path, "latest.jpg");
-
-    fs.unlinkSync(req.file.path);
+    // Write file directly as latest.jpg
+    fs.writeFileSync("latest.jpg", req.file.buffer);
 
     res.send("Uploaded successfully");
 });
